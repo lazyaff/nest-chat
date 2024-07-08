@@ -5,5 +5,6 @@ export class DeleteChatRequest {
   @IsNotEmpty()
   id: string;
 
+  message: string;
   deleted: boolean;
 }

@@ -8,32 +8,49 @@ import { ChatRepository } from './chat.repository';
 import { ShowChatRequest } from './dto/show-chat.request';
 import { EditChatRequest } from './dto/edit-chat.request';
 import { DeleteChatRequest } from './dto/delete-chat.request';
+import { ClientProxy } from '@nestjs/microservices';
 
 @Injectable()
 export class ChatService {
+  private client: ClientProxy;
   constructor(private readonly chatRepository: ChatRepository) {}
 
-  async sendChat(request: SendChatRequest) {
-    request = { ...request, createdAt: new Date(), updatedAt: new Date() };
+  async sendChat(request: SendChatRequest, id: string) {
+    request = {
+      ...request,
+      sender: id,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    // check if sender and receiver are same
+    this.isSameUser(request.sender, request.receiver);
+
     return await this.chatRepository.create(request);
   }
 
-  async getChat(request: ShowChatRequest) {
+  async getChat(request: ShowChatRequest, id: string) {
+    // check if sender and receiver are same
+    this.isSameUser(id, request.receiver);
+
     // mark chat as read
-    await this.readMessage(request.receiver, request.sender);
+    await this.readMessage(request.receiver, id);
 
     return await this.chatRepository.find({
       $or: [
-        { sender: request.sender, receiver: request.receiver },
-        { sender: request.receiver, receiver: request.sender },
+        { sender: id, receiver: request.receiver },
+        { sender: request.receiver, receiver: id },
       ],
     });
   }
 
-  async getUnreadChat(request: ShowChatRequest) {
+  async getUnreadChat(request: ShowChatRequest, id: string) {
+    // check if sender and receiver are same
+    this.isSameUser(id, request.receiver);
+
     const chat = await this.chatRepository.find({
       sender: request.receiver,
-      receiver: request.sender,
+      receiver: id,
       read: false,
     });
 
@@ -43,9 +60,10 @@ export class ChatService {
     };
   }
 
-  async editChat(request: EditChatRequest) {
+  async editChat(request: EditChatRequest, id: string) {
     const chat = await this.chatRepository.findOne({
       _id: request.id,
+      sender: id,
     });
 
     // check if chat exists
@@ -68,9 +86,10 @@ export class ChatService {
     );
   }
 
-  async deleteChat(request: DeleteChatRequest) {
+  async deleteChat(request: DeleteChatRequest, id: string) {
     const chat = await this.chatRepository.findOne({
       _id: request.id,
+      sender: id,
     });
 
     // check if chat exists
@@ -85,13 +104,18 @@ export class ChatService {
       );
     }
 
-    request = { ...request, deleted: true };
+    request = { ...request, message: '', deleted: true };
     return await this.chatRepository.findOneAndUpdate(
       {
         _id: request.id,
       },
       request,
     );
+  }
+
+  private isSameUser(sender: string, receiver: string) {
+    if (sender === receiver)
+      throw new BadRequestException('You cannot send message to yourself');
   }
 
   private isWithinOneHour(timestamp: Date): boolean {

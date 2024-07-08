@@ -11,6 +11,8 @@ services:
       - mongodb-primary
       - mongodb-secondary
       - mongodb-arbiter
+      - auth
+      - rabbitmq
     volumes:
       - .:/usr/src/app
       - /usr/src/app/node_modules

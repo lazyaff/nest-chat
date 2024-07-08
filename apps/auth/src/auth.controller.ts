@@ -43,6 +43,16 @@ export class AuthController {
     });
   }
 
+  // @UseGuards(JwtAuthGuard)
+  @Post('logout')
+  logout(@Res({ passthrough: true }) response: Response) {
+    this.authService.logout(response);
+    response.send({
+      statusCode: 200,
+      message: 'Logged out successfully',
+    });
+  }
+
   @UseGuards(JwtAuthGuard)
   @MessagePattern('validate_user')
   async validateUser(@CurrentUser() user: User) {
