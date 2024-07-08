@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { RmqOptions, Transport } from '@nestjs/microservices';
 
 @Injectable()
-export class RemqService {
+export class RmqService {
   constructor(private readonly configService: ConfigService) {}
 
   getOptions(queue: string, noAck = false): RmqOptions {
