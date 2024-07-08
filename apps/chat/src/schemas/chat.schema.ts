@@ -14,6 +14,15 @@ export class Chat extends AbstractDocument {
 
   @Prop({ default: false })
   deleted: boolean;
+
+  @Prop({ default: false })
+  read: boolean;
+
+  @Prop({ default: Date() })
+  createdAt: Date;
+
+  @Prop({ default: Date() })
+  updatedAt: Date;
 }
 
 export const ChatSchema = SchemaFactory.createForClass(Chat);

@@ -1,4 +1,3 @@
-import { Logger, NotFoundException } from '@nestjs/common';
 import {
   FilterQuery,
   Model,
@@ -10,8 +9,6 @@ import {
 import { AbstractDocument } from './abstract.schema';
 
 export abstract class AbstractRepository<TDocument extends AbstractDocument> {
-  protected abstract readonly logger: Logger;
-
   constructor(
     protected readonly model: Model<TDocument>,
     private readonly connection: Connection,
@@ -32,12 +29,6 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
 
   async findOne(filterQuery: FilterQuery<TDocument>): Promise<TDocument> {
     const document = await this.model.findOne(filterQuery, {}, { lean: true });
-
-    if (!document) {
-      this.logger.warn('Document not found with filterQuery', filterQuery);
-      throw new NotFoundException('Document not found.');
-    }
-
     return document as TDocument;
   }
 
@@ -50,10 +41,17 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
       new: true,
     });
 
-    if (!document) {
-      this.logger.warn(`Document not found with filterQuery:`, filterQuery);
-      throw new NotFoundException('Document not found.');
-    }
+    return document;
+  }
+
+  async findManyAndUpdate(
+    filterQuery: FilterQuery<TDocument>,
+    update: UpdateQuery<TDocument>,
+  ) {
+    const document = await this.model
+      .updateMany(filterQuery, update)
+      .lean()
+      .exec();
 
     return document;
   }
@@ -70,7 +68,9 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
   }
 
   async find(filterQuery: FilterQuery<TDocument>) {
-    return this.model.find(filterQuery, {}, { lean: true });
+    return this.model
+      .find(filterQuery, {}, { lean: true })
+      .sort({ createdAt: -1 });
   }
 
   async startTransaction() {

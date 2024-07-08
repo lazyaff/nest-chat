@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import Joi from 'joi';
+import * as Joi from 'joi';
 import { ChatController } from './chat.controller';
 import { ChatService } from './chat.service';
 import { DatabaseModule } from '@app/common';
@@ -14,8 +14,9 @@ import { ChatRepository } from './chat.repository';
       isGlobal: true,
       validationSchema: Joi.object({
         MONGODB_URI: Joi.string().required(),
+        PORT: Joi.number().required(),
       }),
-      envFilePath: '.apps/chat/.env',
+      envFilePath: './apps/chat/.env',
     }),
     DatabaseModule,
     MongooseModule.forFeature([{ name: Chat.name, schema: ChatSchema }]),
