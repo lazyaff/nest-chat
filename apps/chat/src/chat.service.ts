@@ -9,11 +9,15 @@ import { ShowChatRequest } from './dto/show-chat.request';
 import { EditChatRequest } from './dto/edit-chat.request';
 import { DeleteChatRequest } from './dto/delete-chat.request';
 import { ClientProxy } from '@nestjs/microservices';
+import { ChatGateway } from './chat.gateway';
 
 @Injectable()
 export class ChatService {
   private client: ClientProxy;
-  constructor(private readonly chatRepository: ChatRepository) {}
+  constructor(
+    private readonly chatRepository: ChatRepository,
+    private readonly chatGateway: ChatGateway,
+  ) {}
 
   async sendChat(request: SendChatRequest, id: string) {
     request = {
@@ -26,7 +30,16 @@ export class ChatService {
     // check if sender and receiver are same
     this.isSameUser(request.sender, request.receiver);
 
-    return await this.chatRepository.create(request);
+    const data = await this.chatRepository.create(request);
+
+    // Trigger emit ke WebSocketGateway jika chat berhasil disimpan
+    const { sender, receiver } = data;
+    const content = await this.getUnreadChats(receiver);
+    this.chatGateway.server
+      .to(receiver)
+      .emit('newChat', { sender, receiver, content });
+
+    return data;
   }
 
   async getChat(request: ShowChatRequest, id: string) {
@@ -58,6 +71,28 @@ export class ChatService {
       count: chat.length,
       chat,
     };
+  }
+
+  async getUnreadChats(id: string) {
+    const chat = await this.chatRepository.find({
+      receiver: id,
+      read: false,
+    });
+
+    const groupedChat = chat.reduce((acc, curr) => {
+      const sender = curr.sender;
+      if (!acc[sender]) {
+        acc[sender] = {
+          messages: [],
+          count: 0,
+        };
+      }
+      acc[sender].messages.push(curr);
+      acc[sender].count++;
+      return acc;
+    }, {});
+
+    return groupedChat;
   }
 
   async editChat(request: EditChatRequest, id: string) {
