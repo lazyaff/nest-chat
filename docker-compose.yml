@@ -19,6 +19,26 @@ services:
     ports:
       - '3000:3000'
 
+  profile:
+    build:
+      context: .
+      dockerfile: ./apps/profile/Dockerfile
+      target: development
+    command: npm run start:dev profile
+    env_file:
+      - ./apps/profile/.env
+    depends_on:
+      - mongodb-primary
+      - mongodb-secondary
+      - mongodb-arbiter
+      - auth
+      - rabbitmq
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+    ports:
+      - '3002:3002'
+
   auth:
     build:
       context: .

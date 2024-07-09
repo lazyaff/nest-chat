@@ -72,10 +72,4 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
       .find(filterQuery, {}, { lean: true })
       .sort({ createdAt: -1 });
   }
-
-  async startTransaction() {
-    const session = await this.connection.startSession();
-    session.startTransaction();
-    return session;
-  }
 }

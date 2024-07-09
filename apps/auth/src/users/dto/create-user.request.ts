@@ -25,6 +25,9 @@ export class IsMatchConstraint implements ValidatorConstraintInterface {
 export class CreateUserRequest {
   @IsString()
   @IsNotEmpty()
+  @Matches(/^[a-zA-Z0-9]+$/, {
+    message: 'Username must contain only letters and numbers',
+  })
   username: string;
 
   @IsEmail()
