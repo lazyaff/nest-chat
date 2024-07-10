@@ -5,7 +5,6 @@ import {
 } from '@nestjs/common';
 import { SendChatRequest } from './dto/send-chat.request';
 import { ChatRepository } from './chat.repository';
-import { ShowChatRequest } from './dto/show-chat.request';
 import { EditChatRequest } from './dto/edit-chat.request';
 import { DeleteChatRequest } from './dto/delete-chat.request';
 import { ClientProxy } from '@nestjs/microservices';
@@ -42,28 +41,54 @@ export class ChatService {
     return data;
   }
 
-  async getChat(request: ShowChatRequest, id: string) {
+  async getChat(receiver: string, sender: string) {
     // check if sender and receiver are same
-    this.isSameUser(id, request.receiver);
+    this.isSameUser(sender, receiver);
 
     // mark chat as read
-    await this.readMessage(request.receiver, id);
+    await this.readMessage(receiver, sender);
 
     return await this.chatRepository.find({
       $or: [
-        { sender: id, receiver: request.receiver },
-        { sender: request.receiver, receiver: id },
+        { sender: sender, receiver: receiver },
+        { sender: receiver, receiver: sender },
       ],
     });
   }
 
-  async getUnreadChat(request: ShowChatRequest, id: string) {
+  async getChats(id: string) {
+    const chats = await this.chatRepository.find({
+      $or: [{ sender: id }, { receiver: id }],
+    });
+
+    const groupedChats = chats.reduce((acc, curr) => {
+      const key = curr.sender === id ? curr.receiver : curr.sender;
+      const group = acc.find((g) => g.user === key);
+      if (group) {
+        group.messages.push(curr);
+        if (!curr.read && curr.sender !== id) {
+          group.unread++;
+        }
+      } else {
+        acc.push({
+          user: key,
+          messages: [curr],
+          unread: !curr.read && curr.sender !== id ? 1 : 0,
+        });
+      }
+      return acc;
+    }, []);
+
+    return groupedChats;
+  }
+
+  async getUnreadChat(receiver: string, sender: string) {
     // check if sender and receiver are same
-    this.isSameUser(id, request.receiver);
+    this.isSameUser(sender, receiver);
 
     const chat = await this.chatRepository.find({
-      sender: request.receiver,
-      receiver: id,
+      sender: receiver,
+      receiver: sender,
       read: false,
     });
 
@@ -71,6 +96,33 @@ export class ChatService {
       count: chat.length,
       chat,
     };
+  }
+
+  async getAllUnreadChats(id: string) {
+    const chats = await this.chatRepository.find({
+      receiver: id,
+      read: false,
+    });
+
+    const groupedChats = chats.reduce((acc, curr) => {
+      const key = curr.sender === id ? curr.receiver : curr.sender;
+      const group = acc.find((g) => g.user === key);
+      if (group) {
+        group.messages.push(curr);
+        if (!curr.read && curr.sender !== id) {
+          group.unread++;
+        }
+      } else {
+        acc.push({
+          user: key,
+          messages: [curr],
+          unread: !curr.read && curr.sender !== id ? 1 : 0,
+        });
+      }
+      return acc;
+    }, []);
+
+    return groupedChats;
   }
 
   async getUnreadChats(id: string) {
