@@ -10,12 +10,14 @@ async function bootstrap() {
 
   app.useGlobalPipes(new ValidationPipe());
   const configService = app.get(ConfigService);
+
   app.use(
     cors({
       origin: configService.get('CLIENT_ORIGIN'),
       credentials: true,
     }),
   );
+
   const config = new DocumentBuilder()
     .setTitle('Chat Service')
     .setDescription(
@@ -25,6 +27,7 @@ async function bootstrap() {
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('docs', app, document);
+
   await app.listen(configService.get('PORT'));
 }
 bootstrap();
