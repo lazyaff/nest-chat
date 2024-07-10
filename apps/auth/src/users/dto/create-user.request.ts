@@ -1,3 +1,4 @@
+import { ApiProperty } from '@nestjs/swagger';
 import {
   IsEmail,
   IsNotEmpty,
@@ -23,6 +24,9 @@ export class IsMatchConstraint implements ValidatorConstraintInterface {
 }
 
 export class CreateUserRequest {
+  @ApiProperty({
+    example: 'userone',
+  })
   @IsString()
   @IsNotEmpty()
   @Matches(/^[a-zA-Z0-9]+$/, {
@@ -30,10 +34,16 @@ export class CreateUserRequest {
   })
   username: string;
 
+  @ApiProperty({
+    example: 'userone@example.com',
+  })
   @IsEmail()
   @IsNotEmpty()
   email: string;
 
+  @ApiProperty({
+    example: 'password123',
+  })
   @IsString()
   @IsNotEmpty()
   @MinLength(8, { message: 'Password must be at least 8 characters long' })
@@ -42,6 +52,9 @@ export class CreateUserRequest {
   })
   password: string;
 
+  @ApiProperty({
+    example: 'password123',
+  })
   @IsString()
   @IsNotEmpty()
   @Validate(IsMatchConstraint)

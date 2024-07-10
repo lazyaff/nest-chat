@@ -8,8 +8,19 @@ import { LocalAuthGuard } from './guards/local-auth.guard';
 import { User } from './users/schemas/user.schema';
 import { UsersService } from './users/users.service';
 import { CreateUserRequest } from './users/dto/create-user.request';
+import {
+  ApiBody,
+  ApiCreatedResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
+import { RegisterResponse } from './responses/register.response';
+import { LoginResponse } from './responses/login.response';
+import { LogoutResponse } from './responses/logout.response';
+import { LoginUserRequest } from './users/dto/login-user.request';
 
 @Controller('auth')
+@ApiTags('Main')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
@@ -17,6 +28,13 @@ export class AuthController {
   ) {}
 
   @Post('register')
+  @ApiOperation({
+    summary: 'Register user',
+  })
+  @ApiCreatedResponse({
+    description: 'Registration success',
+    type: RegisterResponse,
+  })
   async register(@Body() request: CreateUserRequest) {
     const user = await this.usersService.createUser(request);
     return {
@@ -32,6 +50,16 @@ export class AuthController {
 
   @UseGuards(LocalAuthGuard)
   @Post('login')
+  @ApiOperation({
+    summary: 'Login user',
+  })
+  @ApiCreatedResponse({
+    description: 'Logged in success',
+    type: LoginResponse,
+  })
+  @ApiBody({
+    type: LoginUserRequest,
+  })
   async login(
     @CurrentUser() user: User,
     @Res({ passthrough: true }) response: Response,
@@ -45,6 +73,13 @@ export class AuthController {
 
   // @UseGuards(JwtAuthGuard)
   @Post('logout')
+  @ApiOperation({
+    summary: 'Logout user',
+  })
+  @ApiCreatedResponse({
+    description: 'Logged out success',
+    type: LogoutResponse,
+  })
   logout(@Res({ passthrough: true }) response: Response) {
     this.authService.logout(response);
     response.send({
